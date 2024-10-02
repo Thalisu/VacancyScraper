@@ -1,0 +1,6 @@
+beautifulsoup4==4.12.3
+bs4==0.0.2
+mypy==1.11.2
+mypy-extensions==1.0.0
+soupsieve==2.6
+typing_extensions==4.12.2
