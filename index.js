@@ -1,8 +1,8 @@
 const { exec } = require("node:child_process");
 
 class JobScrapper {
-  venvActivate = ". venv/bin/activate";
-  linkedinPath = "python3 src/linkedin.py";
+  venvActivate = ". ./VacancyScrapper/venv/bin/activate";
+  linkedinPath = "python3 ./VacancyScrapper/src/linkedin.py";
   args = "";
 
   constructor(keywords, location, timeframe, remote, page) {
