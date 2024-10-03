@@ -7,11 +7,10 @@ class JobScrapper {
 
   constructor(keywords, location, timeframe, remote, page) {
     this.args = `'${keywords}' '${location}' '${timeframe}' '${remote}' '${page}'`;
-    console.log(this.args);
   }
 
-  linkedin() {
-    const jobs = new Promise((resolve, reject) => {
+  async linkedin() {
+    const jobs = await new Promise((resolve, reject) => {
       exec(
         `${this.venvActivate} && ${this.linkedinPath} ${this.args}`,
         (err, stdout, stderr) => {
