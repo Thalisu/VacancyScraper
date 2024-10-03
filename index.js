@@ -18,6 +18,9 @@ class JobScrapper {
           if (err) {
             reject(err);
           }
+          if (stderr) {
+            reject(stderr);
+          }
           resolve(stdout);
         }
       );
