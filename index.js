@@ -1,4 +1,4 @@
-const { exec } = require("node:child_process");
+import { exec } from "child_process";
 
 class JobScrapper {
   venvActivate = ". ./VacancyScrapper/venv/bin/activate";
@@ -26,4 +26,4 @@ class JobScrapper {
   }
 }
 
-module.exports = JobScrapper;
+export default JobScrapper;
