@@ -34,13 +34,15 @@ class LinkedinScrapper:
             return json.dumps([{"error": "timeout"}], indent=4)
 
         soup = BeautifulSoup(re.text, "html.parser")
-        quotes = soup.findAll("div", attrs={"class": "job-search-card"})
+        job_cards = soup.findAll("div", attrs={"class": "job-search-card"})
         jobs_dict = [
             {
-                "title": quote.find("h3").text.strip(),
-                "url": quote.find("a")["href"],
+                "title": job.find("h3").text.strip(),
+                "enterprise": job.find("h4").text.strip(),
+                "url": job.find("a")["href"],
+                "img": job.find("img")["data-delayed-url"],
             }
-            for quote in quotes
+            for job in job_cards
         ]
 
         return json.dumps(jobs_dict, indent=4)
