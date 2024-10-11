@@ -21,7 +21,7 @@ class JobScrapper {
             reject(stderr);
           }
           resolve(stdout);
-        }
+        },
       );
     });
     return JSON.parse(jobs);
