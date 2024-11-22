@@ -1,6 +1,5 @@
 from src.utils.constants import (
     LINKEDIN_JOBS_URL,
-    LINKEDIN_AUTH_URL,
     LINKEDIN_SIGNIN_URL,
 )
 from src.utils.config import USER, PASSWORD
@@ -14,11 +13,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 
 import json
-
-# https://www.linkedin.com/voyager/api/voyagerJobsDashJobCards?decorationId=com.linkedin.voyager.dash.deco.jobs.search.JobSearchCardsCollectionLite-83&count=7&q=jobSearch&query=(currentJobId:4045330029,origin:SWITCH_SEARCH_VERTICAL,keywords:( "backend" OR "back end" OR "back-end" ) AND ( "jr" OR junior ) AND ( express OR django OR flask OR node OR nest ) NOT senior,spellCorrectionEnabled:true)&servedEventEnabled=false&start=0
+import os
 
 
 class LinkedinJobs:
+    output_cookie_dir = "linkedin_cookies.json"
+    base_url = "https://www.linkedin.com"
     url: str
     authenticated: bool
 
@@ -34,16 +34,18 @@ class LinkedinJobs:
         )
 
         self.browser = Browser()
-        self.driver = self.browser.get_driver(headless=True)
 
     def get(self, page=0):
-        if not self.authenticated:
+        if not self.__is_authenticated():
             self.__authenticate()
 
+        driver = self.browser.create_driver(headless=False)
         URL = f"{self.url}&start={page * 25}"
-        self.driver.get(URL)
+        driver.get(URL)
+        self.browser.new_cookies(self.cookies)
+
         html = (
-            WebDriverWait(self.driver, 10)
+            WebDriverWait(driver, 10)
             .until(
                 EC.presence_of_element_located(
                     (By.CLASS_NAME, "scaffold-layout__list-container")
@@ -54,45 +56,73 @@ class LinkedinJobs:
 
         soup = BeautifulSoup(html, "html.parser")
 
-        job_cards = soup.find("li")
-        print(job_cards)
-        return
-
-        try:
-            jobs_dict = [
-                {
-                    "title": job.find("h3").text.strip(),
-                    "enterprise": job.find("h4").text.strip(),
-                    "url": (
-                        job.find("a")["href"]
-                        if job.find("a")
-                        else job.get("href")
-                    ),
-                    "img": job.find("img")["data-delayed-url"],
-                }
-                for job in job_cards
-            ]
-            return json.dumps(jobs_dict, indent=4)
-
-        except TypeError as err:
-            return json.dumps([{"TypeError": err.args[0]}], indent=4)
+        job_cards = soup.select(
+            "li.jobs-search-results__list-item:not(.jobs-search-results__job-card-search--generic-occludable-area)"
+        )
+        return self.__get_jobs(job_cards)
 
     def __authenticate(self):
-        self.driver.get(LINKEDIN_SIGNIN_URL)
-        self.driver.find_element(By.ID, "username").send_keys(USER)
-        self.driver.find_element(By.ID, "password").send_keys(
-            PASSWORD + Keys.ENTER
-        )
+        driver = self.browser.create_driver()
+        driver.get(LINKEDIN_SIGNIN_URL)
+        driver.find_element(By.ID, "username").send_keys(USER)
+        driver.find_element(By.ID, "password").send_keys(PASSWORD + Keys.ENTER)
 
-        is_captcha = WebDriverWait(self.driver, 1).until(
-            EC.presence_of_element_located((By.ID, "captcha-internal"))
+        is_captcha = WebDriverWait(driver, 1).until(
+            lambda d: "security"
+            in d.find_element(By.TAG_NAME, "h1").text.lower()
         )
 
         if is_captcha:
-            WebDriverWait(self.driver, 20).until_not(
-                EC.presence_of_element_located((By.ID, "captcha-internal"))
+            WebDriverWait(driver, 20).until_not(
+                lambda d: "security"
+                in d.find_element(By.TAG_NAME, "h1").text.lower()
             )
+
+        cookies = driver.get_cookies()
+        with open(self.output_cookie_dir, "w") as f:
+            json.dump(cookies, f)
+
+        self.cookies = cookies
+
+    def __is_authenticated(self):
+        if not os.path.exists(self.output_cookie_dir):
+            return False
+
+        with open(self.output_cookie_dir, "r") as f:
+            cookies = json.load(f)
+            if not cookies:
+                return False
+
+            self.cookies = cookies
+            return True
+
+    def __get_jobs(self, job_cards):
+        jobs_dict = []
+        with open("random.html", "w") as f:
+            for job in job_cards:
+                f.write(str(job))
+                a = job.find("a")
+                if not a:
+                    continue
+                span = job.find(
+                    "span",
+                    attrs={"class": "job-card-container__primary-description"},
+                )
+                img = job.find("img")
+
+                jobs_dict.append(
+                    {
+                        "title": a.find("strong").text if a else "",
+                        "enterprise": span.text.strip() if span else "",
+                        "url": (
+                            (f"{self.base_url}{a.get('href')}") if a else ""
+                        ),
+                        "img": img.get("src") if img else "",
+                    }
+                )
+
+        return json.dumps(jobs_dict, indent=4)
 
 
 TEST = LinkedinJobs("desenvolvedor", "Brazil", "r86400", "1%2C2%2C3")
-TEST.get()
+print(TEST.get())
