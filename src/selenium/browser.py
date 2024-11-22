@@ -1,24 +1,43 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from src.utils.config import DRIVER_PATH
+import undetected_chromedriver as uc  # type: ignore
+from selenium.common.exceptions import InvalidCookieDomainException
+
+import sys
+import time
 
 
 class Browser:
     def __init__(self):
-        service = Service(executable_path=DRIVER_PATH)
-        driver = webdriver.Chrome(service=service)
+        self.driver = None
+
+    def create_driver(self, headless=False):
+        if self.driver:
+            self.__close()
+
+        driver = uc.Chrome(headless=headless, use_subprocess=False)
+
         self.driver = driver
 
-    def get_driver(self, headless=True):
-        if headless:
-            self.hide()
-        return self.driver
+        return driver
 
-    def hide(self):
-        self.driver.set_window_position(-10000, 0)
+    def new_cookies(self, cookies: list, retries=2):
+        if retries == 0:
+            print("cant put cookies")
+            sys.exit(0)
+        try:
+            for cookie in cookies:
+                self.driver.add_cookie(cookie)
+        except InvalidCookieDomainException:
+            time.sleep(1)
+            self.new_cookies(cookies, retries - 1)
+        finally:
+            self.driver.refresh()
 
-    def show(self):
-        self.driver.set_window_position(0, 0)
+    def ensured_get(self, url):
+        pass
 
-    def close(self):
+    def __is_success(self, retries=1, max_retries=3):
+        pass
+
+    def __close(self):
         self.driver.quit()
+        self.driver = None
