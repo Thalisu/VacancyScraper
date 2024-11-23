@@ -39,10 +39,9 @@ class LinkedinJobs:
         if not self.__is_authenticated():
             self.__authenticate()
 
-        driver = self.browser.create_driver(headless=False)
+        driver = self.browser.create_driver(headless=True)
         URL = f"{self.url}&start={page * 25}"
-        driver.get(URL)
-        self.browser.new_cookies(self.cookies)
+        self.browser.get_with_cookies(self.base_url, URL, self.cookies)
 
         html = (
             WebDriverWait(driver, 10)
@@ -54,6 +53,8 @@ class LinkedinJobs:
             .get_attribute("innerHTML")
         )
 
+        self.browser.close()
+
         soup = BeautifulSoup(html, "html.parser")
 
         job_cards = soup.select(
@@ -62,7 +63,7 @@ class LinkedinJobs:
         return self.__get_jobs(job_cards)
 
     def __authenticate(self):
-        driver = self.browser.create_driver()
+        driver = self.browser.create_driver(headless=False)
         driver.get(LINKEDIN_SIGNIN_URL)
         driver.find_element(By.ID, "username").send_keys(USER)
         driver.find_element(By.ID, "password").send_keys(PASSWORD + Keys.ENTER)
@@ -101,28 +102,45 @@ class LinkedinJobs:
         with open("random.html", "w") as f:
             for job in job_cards:
                 f.write(str(job))
+
                 a = job.find("a")
                 if not a:
                     continue
-                span = job.find(
-                    "span",
-                    attrs={"class": "job-card-container__primary-description"},
+                title = a.find("strong").text
+                url = f"{self.base_url}{a.get('href')}"
+
+                enterprise_container = job.find(
+                    "div",
+                    attrs={"class": "artdeco-entity-lockup__subtitle"},
                 )
+                if enterprise_container:
+                    enterprise_container = enterprise_container.find("span")
+                enterprise = (
+                    enterprise_container.text.strip()
+                    if enterprise_container
+                    else ""
+                )
+
                 img = job.find("img")
+                if img:
+                    img = img.get("src")
 
                 jobs_dict.append(
                     {
-                        "title": a.find("strong").text if a else "",
-                        "enterprise": span.text.strip() if span else "",
-                        "url": (
-                            (f"{self.base_url}{a.get('href')}") if a else ""
-                        ),
-                        "img": img.get("src") if img else "",
+                        "title": title,
+                        "url": url,
+                        "enterprise": enterprise,
+                        "img": img,
                     }
                 )
 
         return json.dumps(jobs_dict, indent=4)
 
 
-TEST = LinkedinJobs("desenvolvedor", "Brazil", "r86400", "1%2C2%2C3")
+TEST = LinkedinJobs(
+    "Backend",
+    "Brazil",
+    "r86400",
+    "1%2C2%2C3",
+)
 print(TEST.get())
