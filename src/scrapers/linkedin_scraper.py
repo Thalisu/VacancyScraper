@@ -40,7 +40,7 @@ class LinkedinJobs:
         if not self.__is_authenticated():
             self.__authenticate()
 
-        driver = self.browser.create_driver(headless=False)
+        driver = self.browser.create_driver(headless=True)
         URL = f"{self.url}&start={page * 25}"
         self.browser.get_with_cookies(self.base_url, URL, self.cookies)
 
