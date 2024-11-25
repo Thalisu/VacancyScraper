@@ -1,5 +1,8 @@
 import os
+from dotenv import load_dotenv
 
-USER = os.environ.get("USER")
-PASSWORD = os.environ.get("PASSWORD")
-DRIVER_PATH = os.environ.get("DRIVER_PATH")
+load_dotenv()
+
+
+def get_config(name):
+    return os.environ.get(name)

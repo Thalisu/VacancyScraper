@@ -2,7 +2,7 @@ from src.utils.constants import (
     LINKEDIN_JOBS_URL,
     LINKEDIN_SIGNIN_URL,
 )
-from src.utils.config import USER, PASSWORD
+from src.utils.config import get_config
 
 from src.selenium.browser import Browser
 from selenium.webdriver.common.by import By
@@ -77,8 +77,10 @@ class LinkedinJobs:
     def __authenticate(self):
         driver = self.browser.create_driver(headless=False)
         driver.get(LINKEDIN_SIGNIN_URL)
-        driver.find_element(By.ID, "username").send_keys(USER)
-        driver.find_element(By.ID, "password").send_keys(PASSWORD + Keys.ENTER)
+        driver.find_element(By.ID, "username").send_keys(get_config("USER"))
+        driver.find_element(By.ID, "password").send_keys(
+            get_config("PASSWORD") + Keys.ENTER
+        )
         time.sleep(1)
 
         is_captcha = "security" in driver.find_element(By.TAG_NAME, "h1").text
