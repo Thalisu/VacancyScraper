@@ -37,10 +37,12 @@ class LinkedinJobs:
         self.browser = Browser()
 
     def get(self, page=0):
+        print("Verifying authentication...")
         if not self.__is_authenticated():
             self.__authenticate()
 
-        driver = self.browser.create_driver(headless=True)
+        print("Getting jobs...")
+        driver = self.browser.create_driver(headless=False)
         URL = f"{self.url}&start={page * 25}"
         self.browser.get_with_cookies(self.base_url, URL, self.cookies)
 
@@ -54,7 +56,7 @@ class LinkedinJobs:
             .get_attribute("innerHTML")
         )
         html = driver.page_source
-
+        print("Setting up jobs...")
         self.browser.close()
 
         soup = BeautifulSoup(html, "html.parser")
