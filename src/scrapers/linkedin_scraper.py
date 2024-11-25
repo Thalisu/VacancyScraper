@@ -11,6 +11,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from bs4 import BeautifulSoup
+from urllib.parse import quote
 
 import json
 import os
@@ -23,7 +24,7 @@ class LinkedinJobs:
     authenticated: bool
 
     def __init__(self, keywords, location, timeframe, remote):
-        keywords = f"keywords={keywords}"
+        keywords = f"keywords={quote(keywords)}"
         location = f"&location={location}"
         timeframe = f"&f_TPR={timeframe}"
         remote = f"&f_WT={remote}"
@@ -39,11 +40,11 @@ class LinkedinJobs:
         if not self.__is_authenticated():
             self.__authenticate()
 
-        driver = self.browser.create_driver(headless=True)
+        driver = self.browser.create_driver(headless=False)
         URL = f"{self.url}&start={page * 25}"
         self.browser.get_with_cookies(self.base_url, URL, self.cookies)
 
-        html = (
+        job_list = (
             WebDriverWait(driver, 10)
             .until(
                 EC.presence_of_element_located(
@@ -52,10 +53,18 @@ class LinkedinJobs:
             )
             .get_attribute("innerHTML")
         )
+        html = driver.page_source
 
         self.browser.close()
 
         soup = BeautifulSoup(html, "html.parser")
+
+        no_results = soup.select_one("div.jobs-search-no-results-banner")
+
+        if no_results:
+            return []
+
+        soup = BeautifulSoup(job_list, "html.parser")
 
         job_cards = soup.select(
             "li.jobs-search-results__list-item:not(.jobs-search-results__job-card-search--generic-occludable-area)"
@@ -135,12 +144,3 @@ class LinkedinJobs:
                 )
 
         return json.dumps(jobs_dict, indent=4)
-
-
-TEST = LinkedinJobs(
-    "Backend",
-    "Brazil",
-    "r86400",
-    "1%2C2%2C3",
-)
-print(TEST.get())
