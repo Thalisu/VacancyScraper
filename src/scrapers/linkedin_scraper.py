@@ -15,6 +15,7 @@ from urllib.parse import quote
 
 import json
 import os
+import time
 
 
 class LinkedinJobs:
@@ -78,11 +79,9 @@ class LinkedinJobs:
         driver.get(LINKEDIN_SIGNIN_URL)
         driver.find_element(By.ID, "username").send_keys(USER)
         driver.find_element(By.ID, "password").send_keys(PASSWORD + Keys.ENTER)
+        time.sleep(1)
 
-        is_captcha = WebDriverWait(driver, 1).until(
-            lambda d: "security"
-            in d.find_element(By.TAG_NAME, "h1").text.lower()
-        )
+        is_captcha = "security" in driver.find_element(By.TAG_NAME, "h1").text
 
         if is_captcha:
             WebDriverWait(driver, 20).until_not(
