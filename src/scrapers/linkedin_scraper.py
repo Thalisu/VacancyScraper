@@ -1,13 +1,10 @@
-from src.utils.constants import (
-    LINKEDIN_JOBS_URL,
-    LINKEDIN_SIGNIN_URL,
-)
-from src.utils.config import get_config
+from src.utils.constants import LINKEDIN_JOBS_URL
+
 from urllib.parse import quote
 
 from src.selenium.browser import Browser
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
+
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -18,7 +15,6 @@ from bs4 import BeautifulSoup
 
 import json
 import os
-import time
 
 
 class LinkedinJobs:
@@ -87,29 +83,6 @@ class LinkedinJobs:
             "li.jobs-search-results__list-item:not(.jobs-search-results__job-card-search--generic-occludable-area)"
         )
         return self.__get_jobs(job_cards)
-
-    def authenticate(self):
-        driver = self.browser.create_driver(headless=False)
-        driver.get(LINKEDIN_SIGNIN_URL)
-        driver.find_element(By.ID, "username").send_keys(get_config("USER"))
-        driver.find_element(By.ID, "password").send_keys(
-            get_config("PASSWORD") + Keys.ENTER
-        )
-        time.sleep(1)
-
-        is_captcha = "security" in driver.find_element(By.TAG_NAME, "h1").text
-
-        if is_captcha:
-            WebDriverWait(driver, 20).until_not(
-                lambda d: "security"
-                in d.find_element(By.TAG_NAME, "h1").text.lower()
-            )
-
-        cookies = driver.get_cookies()
-        with open(self.__output_cookie_dir, "w") as f:
-            json.dump(cookies, f)
-
-        self.cookies = cookies
 
     def __is_authenticated(self):
         if not os.path.exists(self.__output_cookie_dir):
