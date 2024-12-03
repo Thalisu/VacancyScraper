@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from src.scrapers.linkedin_scraper import LinkedinJobs
 
-from src.exceptions import MissingKeywords, InvalidCookiesOrUrl
+from src.exceptions import MissingKeywords, InvalidCookiesOrUrl, MissingCookies
 from fastapi import HTTPException
 
 from src.models.job import Job
@@ -24,5 +24,7 @@ def search_job(request: JobRequest) -> Job:
         raise HTTPException(status_code=400, detail="Keywords are required")
     except InvalidCookiesOrUrl:
         raise HTTPException(status_code=400, detail="Invalid cookies or url")
+    except MissingCookies:
+        raise HTTPException(status_code=400, detail="Please authenticate")
 
     return jobs.get(page=request.page)
