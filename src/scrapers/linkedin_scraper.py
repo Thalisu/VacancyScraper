@@ -9,6 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
 from bs4 import BeautifulSoup
 from urllib.parse import quote
@@ -47,15 +48,18 @@ class LinkedinJobs:
         URL = f"{self.url}&start={page * 25}"
         self.browser.get_with_cookies(self.base_url, URL, self.cookies)
 
-        job_list = (
-            WebDriverWait(driver, 10)
-            .until(
-                EC.presence_of_element_located(
-                    (By.CLASS_NAME, "scaffold-layout__list-container")
+        try:
+            job_list = (
+                WebDriverWait(driver, 10)
+                .until(
+                    EC.presence_of_element_located(
+                        (By.CLASS_NAME, "scaffold-layout__list-container")
+                    )
                 )
+                .get_attribute("innerHTML")
             )
-            .get_attribute("innerHTML")
-        )
+        except TimeoutException:
+            return []
         html = driver.page_source
         print("Setting up jobs...")
         self.browser.close()
