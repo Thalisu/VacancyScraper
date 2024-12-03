@@ -19,7 +19,7 @@ import os
 
 class LinkedinJobs:
     __output_cookie_dir = "linkedin_cookies.json"
-    __base___url = "https://www.linkedin.com"
+    __base_url = "https://www.linkedin.com"
     __url: str
     __authenticated: bool
 
@@ -50,21 +50,22 @@ class LinkedinJobs:
             raise MissingCookies()
 
         print("Getting jobs...")
-        driver = self.browser.create_driver(headless=True)
-        __url = f"{self.__url}&start={page * 25}"
-        self.browser.get_with_cookies(self.__base___url, __url, self.cookies)
+        driver = self.browser.create_driver(headless=False)
+        url = f"{self.__url}&start={page * 25}"
+        self.browser.get_with_cookies(self.__base_url, url, self.cookies)
 
         try:
             job_list = (
                 WebDriverWait(driver, 10)
                 .until(
                     EC.presence_of_element_located(
-                        (By.CLASS_NAME, "scaffold-layout__list-container")
+                        (By.CLASS_NAME, "scaffold-layout__list")
                     )
                 )
                 .get_attribute("innerHTML")
             )
         except TimeoutException:
+            self.browser.close()
             raise InvalidCookiesOrUrl()
         html = driver.page_source
         print("Setting up jobs...")
@@ -79,9 +80,7 @@ class LinkedinJobs:
 
         soup = BeautifulSoup(job_list, "html.parser")
 
-        job_cards = soup.select(
-            "li.jobs-search-results__list-item:not(.jobs-search-results__job-card-search--generic-occludable-area)"
-        )
+        job_cards = soup.select("li.scaffold-layout__list-item")
         return self.__get_jobs(job_cards)
 
     def __is_authenticated(self):
@@ -106,7 +105,7 @@ class LinkedinJobs:
                 if not a:
                     continue
                 title = a.find("strong").text
-                __url = f"{self.__base___url}{a.get('href')}"
+                url = f"{self.__base_url}{a.get('href')}"
 
                 enterprise_container = job.find(
                     "div",
@@ -127,10 +126,10 @@ class LinkedinJobs:
                 jobs_dict.append(
                     {
                         "title": title,
-                        "__url": __url,
+                        "url": url,
                         "enterprise": enterprise,
                         "img": img,
                     }
                 )
 
-        return json.dumps(jobs_dict, indent=4)
+        return jobs_dict
