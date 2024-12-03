@@ -4,6 +4,7 @@ from src.selenium.browser import Browser
 from selenium.webdriver.common.by import By
 
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import NoSuchElementException
 
 from src.utils.constants import LINKEDIN_SIGNIN_URL
 
@@ -26,8 +27,12 @@ class Auth:
             get_config("PASSWORD") + Keys.ENTER
         )
         time.sleep(1)
-
-        is_captcha = "security" in driver.find_element(By.TAG_NAME, "h1").text
+        try:
+            is_captcha = (
+                "security" in driver.find_element(By.TAG_NAME, "h1").text
+            )
+        except NoSuchElementException:
+            is_captcha = False
 
         if is_captcha:
             WebDriverWait(driver, 20).until_not(
@@ -36,5 +41,7 @@ class Auth:
             )
 
         cookies = driver.get_cookies()
+        self.browser.close()
+
         with open(self.__output_cookie_dir, "w") as f:
             json.dump(cookies, f)
