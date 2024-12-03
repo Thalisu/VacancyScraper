@@ -12,7 +12,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from selenium.common.exceptions import TimeoutException
-from exceptions import MissingKeywords  # type: ignore
+from src.exceptions import MissingKeywords, InvalidCookiesOrUrl, MissingCookies
 
 from bs4 import BeautifulSoup
 
@@ -51,7 +51,7 @@ class LinkedinJobs:
     def get(self, page):
         print("Verifying authentication...")
         if not self.__is_authenticated():
-            self.__authenticate()
+            raise MissingCookies()
 
         print("Getting jobs...")
         driver = self.browser.create_driver(headless=True)
@@ -69,7 +69,7 @@ class LinkedinJobs:
                 .get_attribute("innerHTML")
             )
         except TimeoutException:
-            return []
+            raise InvalidCookiesOrUrl()
         html = driver.page_source
         print("Setting up jobs...")
         self.browser.close()
@@ -88,7 +88,7 @@ class LinkedinJobs:
         )
         return self.__get_jobs(job_cards)
 
-    def __authenticate(self):
+    def authenticate(self):
         driver = self.browser.create_driver(headless=False)
         driver.get(LINKEDIN_SIGNIN_URL)
         driver.find_element(By.ID, "username").send_keys(get_config("USER"))
