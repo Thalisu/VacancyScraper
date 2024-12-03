@@ -3,16 +3,18 @@ from src.utils.constants import (
     LINKEDIN_SIGNIN_URL,
 )
 from src.utils.config import get_config
+from urllib.parse import quote
 
 from src.selenium.browser import Browser
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
 from selenium.common.exceptions import TimeoutException
+from exceptions import MissingKeywords  # type: ignore
 
 from bs4 import BeautifulSoup
-from urllib.parse import quote
 
 import json
 import os
@@ -20,33 +22,41 @@ import time
 
 
 class LinkedinJobs:
-    output_cookie_dir = "linkedin_cookies.json"
-    base_url = "https://www.linkedin.com"
-    url: str
-    authenticated: bool
+    __output_cookie_dir = "linkedin_cookies.json"
+    __base___url = "https://www.linkedin.com"
+    __url: str
+    __authenticated: bool
 
-    def __init__(self, keywords, location, timeframe, remote):
+    def __init__(
+        self,
+        keywords,
+        location,
+        timeframe,
+        remote,
+    ):
+        if not keywords:
+            raise MissingKeywords()
         keywords = f"keywords={quote(keywords)}"
         location = f"&location={location}"
         timeframe = f"&f_TPR={timeframe}"
         remote = f"&f_WT={remote}"
 
-        self.authenticated = False
-        self.url = (
+        self.__authenticated = False
+        self.__url = (
             f"{LINKEDIN_JOBS_URL}{keywords}{location}{timeframe}{remote}"
         )
 
         self.browser = Browser()
 
-    def get(self, page=0):
+    def get(self, page):
         print("Verifying authentication...")
         if not self.__is_authenticated():
             self.__authenticate()
 
         print("Getting jobs...")
         driver = self.browser.create_driver(headless=True)
-        URL = f"{self.url}&start={page * 25}"
-        self.browser.get_with_cookies(self.base_url, URL, self.cookies)
+        __url = f"{self.__url}&start={page * 25}"
+        self.browser.get_with_cookies(self.__base___url, __url, self.cookies)
 
         try:
             job_list = (
@@ -96,16 +106,16 @@ class LinkedinJobs:
             )
 
         cookies = driver.get_cookies()
-        with open(self.output_cookie_dir, "w") as f:
+        with open(self.__output_cookie_dir, "w") as f:
             json.dump(cookies, f)
 
         self.cookies = cookies
 
     def __is_authenticated(self):
-        if not os.path.exists(self.output_cookie_dir):
+        if not os.path.exists(self.__output_cookie_dir):
             return False
 
-        with open(self.output_cookie_dir, "r") as f:
+        with open(self.__output_cookie_dir, "r") as f:
             cookies = json.load(f)
             if not cookies:
                 return False
@@ -123,7 +133,7 @@ class LinkedinJobs:
                 if not a:
                     continue
                 title = a.find("strong").text
-                url = f"{self.base_url}{a.get('href')}"
+                __url = f"{self.__base___url}{a.get('href')}"
 
                 enterprise_container = job.find(
                     "div",
@@ -144,7 +154,7 @@ class LinkedinJobs:
                 jobs_dict.append(
                     {
                         "title": title,
-                        "url": url,
+                        "__url": __url,
                         "enterprise": enterprise,
                         "img": img,
                     }
