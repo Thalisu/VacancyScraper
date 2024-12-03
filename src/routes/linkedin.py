@@ -8,11 +8,13 @@ from fastapi import HTTPException
 from src.models.job import Job
 from src.schemas.linkedin import JobRequest
 
+from typing import List
+
 router = APIRouter()
 
 
 @router.get("/linkedin")
-def search_job(request: JobRequest) -> Job:
+def search_job(request: JobRequest) -> List[Job]:
     try:
         jobs = LinkedinJobs(
             keywords=request.keywords,
