@@ -1,48 +1,21 @@
-# simple job scraper
+# Running guide
 
-## Create virtual enviroment
+## Define your .env
 
-    python -m venv venv
+### Generate your AES key
 
-## Activate virtual enviroment
+    python3 -m src.utils.generate_key "your desired password"
 
-    Windows:
-    venv\Scripts\activate
+### Example .env
 
-    macOS/Linux:
-    . venv/bin/activate
+    USER = random_user
+    PASSWORD = random_password
+    AES_KEY = 0000000000000000000000000000000000000000000000000000000000000000
 
-## Install requirements
+## Install docker
 
-    pip install -r ./requirements.txt
+    https://www.docker.com/
 
-## Setup .env file
+### run
 
-    USER = linkedin user to be used
-    PASSWORD = password
-
-## Install Chrome
-
-    https://www.google.com/intl/pt-BR/chrome/
-
-## Running
-
-### the first argv is required
-
-    python3 -m src.linkedin
-
-### argv 1
-
-    your search keyword ex: '"backend" AND "junior"'
-
-### argv 2
-
-    location ex: 'Brazil'
-
-### argv 3
-
-    timeframe linkedin format, r86400 means for example 24hrs = 86400 seconds
-
-### argv 4
-
-    Remote ex: 2 for only remote works
+    docker compose up --build
