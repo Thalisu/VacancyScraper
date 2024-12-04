@@ -7,15 +7,15 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
 
 from src.utils.constants import LINKEDIN_SIGNIN_URL
+from src.utils.cookie_encryption import encrypt
 
 import time
-import json
 
 
 class Auth:
     def __init__(self, where):
         if where == "linkedin":
-            self.__output_cookie_dir = "linkedin_cookies.json"
+            self.__output_cookie_dir = "linkedin_cookies.bin"
 
         self.browser = Browser()
 
@@ -41,7 +41,6 @@ class Auth:
             )
 
         cookies = driver.get_cookies()
-        self.browser.close()
 
-        with open(self.__output_cookie_dir, "w") as f:
-            json.dump(cookies, f)
+        self.browser.close()
+        encrypt(cookies, self.__output_cookie_dir)
