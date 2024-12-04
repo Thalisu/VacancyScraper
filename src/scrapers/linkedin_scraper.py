@@ -1,4 +1,5 @@
 from src.utils.constants import LINKEDIN_JOBS_URL
+from src.utils.cookie_encryption import decrypt
 
 from urllib.parse import quote
 
@@ -13,12 +14,11 @@ from src.exceptions import MissingKeywords, InvalidCookiesOrUrl, MissingCookies
 
 from bs4 import BeautifulSoup
 
-import json
 import os
 
 
 class LinkedinJobs:
-    __output_cookie_dir = "linkedin_cookies.json"
+    __output_cookie_dir = "linkedin_cookies.bin"
     __base_url = "https://www.linkedin.com"
     __url: str
     __authenticated: bool
@@ -45,11 +45,11 @@ class LinkedinJobs:
         self.browser = Browser()
 
     def get(self, page):
-        print("Verifying authentication...")
+        # print("Verifying authentication...")
         if not self.__is_authenticated():
             raise MissingCookies()
 
-        print("Getting jobs...")
+        # print("Getting jobs...")
         driver = self.browser.create_driver(headless=False)
         url = f"{self.__url}&start={page * 25}"
         self.browser.get_with_cookies(self.__base_url, url, self.cookies)
@@ -68,7 +68,7 @@ class LinkedinJobs:
             self.browser.close()
             raise InvalidCookiesOrUrl()
         html = driver.page_source
-        print("Setting up jobs...")
+        # print("Setting up jobs...")
         self.browser.close()
 
         soup = BeautifulSoup(html, "html.parser")
@@ -84,16 +84,17 @@ class LinkedinJobs:
         return self.__get_jobs(job_cards)
 
     def __is_authenticated(self):
-        if not os.path.exists(self.__output_cookie_dir):
+        cookie_path = self.__output_cookie_dir
+
+        if not os.path.exists(cookie_path):
             return False
 
-        with open(self.__output_cookie_dir, "r") as f:
-            cookies = json.load(f)
-            if not cookies:
-                return False
+        cookies = decrypt(cookie_path)
+        if not cookies:
+            return False
 
-            self.cookies = cookies
-            return True
+        self.cookies = cookies
+        return True
 
     def __get_jobs(self, job_cards):
         jobs_dict = []
@@ -125,10 +126,10 @@ class LinkedinJobs:
 
                 jobs_dict.append(
                     {
-                        "title": title,
-                        "url": url,
-                        "enterprise": enterprise,
-                        "img": img,
+                        "title": f"{title}",
+                        "url": f"{url}",
+                        "enterprise": f"{enterprise}",
+                        "img": f"{img}",
                     }
                 )
 
