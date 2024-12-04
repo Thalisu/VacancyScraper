@@ -1,0 +1,14 @@
+.mypy_cache
+venv
+.env
+__pycache__/
+*.py[cod]
+db.sqlite3
+testdata.txt
+random.html
+*.json
+downloaded_files
+readme.md
+mypy.ini
+LICENSE
+.gitignore
