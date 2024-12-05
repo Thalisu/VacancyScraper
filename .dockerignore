@@ -11,3 +11,5 @@ readme.md
 mypy.ini
 LICENSE
 .gitignore
+Dockerfile
+docker-compose.yml
