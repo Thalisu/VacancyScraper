@@ -4,6 +4,7 @@ from src.utils.cookie_encryption import decrypt
 from urllib.parse import quote
 
 from src.selenium.browser import Browser
+from src.authenticate import Auth
 from selenium.webdriver.common.by import By
 
 from selenium.webdriver.support.ui import WebDriverWait
@@ -21,7 +22,6 @@ class LinkedinJobs:
     __output_cookie_dir = "linkedin_cookies.bin"
     __base_url = "https://www.linkedin.com"
     __url: str
-    __authenticated: bool
 
     def __init__(
         self,
@@ -37,18 +37,38 @@ class LinkedinJobs:
         timeframe = f"&f_TPR={timeframe}"
         remote = f"&f_WT={remote}"
 
-        self.__authenticated = False
         self.__url = (
             f"{LINKEDIN_JOBS_URL}{keywords}{location}{timeframe}{remote}"
         )
 
+        self.auth = Auth("linkedin")
         self.browser = Browser()
 
     def get(self, page):
         # print("Verifying authentication...")
         if not self.__is_authenticated():
-            raise MissingCookies()
+            # print("Trying headless Authentication...")
+            self.__authenticate()
+        else:
+            self.cookies = decrypt(self.__output_cookie_dir)
 
+        # print("Getting jobs...")
+        html = self.__get_jobs_html(page)
+
+        # print("Setting up jobs...")
+        soup = BeautifulSoup(html[0], "html.parser")
+
+        no_results = soup.select_one("div.jobs-search-no-results-banner")
+
+        if no_results:
+            return []
+
+        soup = BeautifulSoup(html[1], "html.parser")
+
+        job_cards = soup.select("li.scaffold-layout__list-item")
+        return self.__get_jobs(job_cards)
+
+    def __get_jobs_html(self, page, retries=1):
         # print("Getting jobs...")
         driver = self.browser.create_driver(headless=False)
         url = f"{self.__url}&start={page * 25}"
@@ -66,22 +86,19 @@ class LinkedinJobs:
             )
         except TimeoutException:
             self.browser.close()
-            raise InvalidCookiesOrUrl()
+            if not retries:
+                raise InvalidCookiesOrUrl()
+            self.__authenticate()
+            return self.__get_jobs_html(page, retries=retries - 1)
+
         html = driver.page_source
-        # print("Setting up jobs...")
         self.browser.close()
+        return [html, job_list]
 
-        soup = BeautifulSoup(html, "html.parser")
-
-        no_results = soup.select_one("div.jobs-search-no-results-banner")
-
-        if no_results:
-            return []
-
-        soup = BeautifulSoup(job_list, "html.parser")
-
-        job_cards = soup.select("li.scaffold-layout__list-item")
-        return self.__get_jobs(job_cards)
+    def __authenticate(self):
+        self.cookies = self.auth.authenticate(headless=True)
+        if not self.cookies:
+            raise MissingCookies()
 
     def __is_authenticated(self):
         cookie_path = self.__output_cookie_dir

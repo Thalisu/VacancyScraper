@@ -19,8 +19,8 @@ class Auth:
 
         self.browser = Browser()
 
-    def authenticate(self):
-        driver = self.browser.create_driver(headless=False)
+    def authenticate(self, headless=False):
+        driver = self.browser.create_driver(headless=headless)
         driver.get(LINKEDIN_SIGNIN_URL)
         driver.find_element(By.ID, "username").send_keys(get_config("USER"))
         driver.find_element(By.ID, "password").send_keys(
@@ -34,6 +34,10 @@ class Auth:
         except NoSuchElementException:
             is_captcha = False
 
+        if is_captcha and headless:
+            self.browser.close()
+            return None
+
         if is_captcha:
             WebDriverWait(driver, 20).until_not(
                 lambda d: "security"
@@ -44,3 +48,4 @@ class Auth:
 
         self.browser.close()
         encrypt(cookies, self.__output_cookie_dir)
+        return cookies
