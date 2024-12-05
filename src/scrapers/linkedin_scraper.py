@@ -69,7 +69,6 @@ class LinkedinJobs:
         return self.__get_jobs(job_cards)
 
     def __get_jobs_html(self, page, retries=1):
-        # print("Getting jobs...")
         driver = self.browser.create_driver(headless=False)
         url = f"{self.__url}&start={page * 25}"
         self.browser.get_with_cookies(self.__base_url, url, self.cookies)
@@ -86,8 +85,10 @@ class LinkedinJobs:
             )
         except TimeoutException:
             self.browser.close()
+
             if not retries:
                 raise InvalidCookiesOrUrl()
+
             self.__authenticate()
             return self.__get_jobs_html(page, retries=retries - 1)
 
