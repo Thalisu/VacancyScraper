@@ -28,9 +28,7 @@ class Auth:
         )
         time.sleep(1)
         try:
-            is_captcha = (
-                "security" in driver.find_element(By.TAG_NAME, "h1").text
-            )
+            is_captcha = "quick" in driver.find_element(By.TAG_NAME, "h1").text
         except NoSuchElementException:
             is_captcha = False
 
@@ -40,7 +38,7 @@ class Auth:
 
         if is_captcha:
             WebDriverWait(driver, 20).until_not(
-                lambda d: "security"
+                lambda d: "quick"
                 in d.find_element(By.TAG_NAME, "h1").text.lower()
             )
 
