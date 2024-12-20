@@ -30,7 +30,6 @@ async def search_job(request: JobRequest) -> List[Job]:
     except MissingCookies:
         raise HTTPException(status_code=400, detail="Please authenticate")
 
-    print("hello")
     job_cards = await asyncio.to_thread(jobs.get, page=request.page)
 
     return job_cards
