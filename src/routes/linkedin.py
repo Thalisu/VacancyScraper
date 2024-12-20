@@ -7,6 +7,7 @@ from fastapi import HTTPException
 
 from src.models.job import Job
 from src.schemas.linkedin import JobRequest
+import asyncio
 
 from typing import List
 
@@ -14,7 +15,7 @@ router = APIRouter()
 
 
 @router.get("/linkedin")
-def search_job(request: JobRequest) -> List[Job]:
+async def search_job(request: JobRequest) -> List[Job]:
     try:
         jobs = LinkedinJobs(
             keywords=request.keywords,
@@ -29,4 +30,7 @@ def search_job(request: JobRequest) -> List[Job]:
     except MissingCookies:
         raise HTTPException(status_code=400, detail="Please authenticate")
 
-    return jobs.get(page=request.page)
+    print("hello")
+    job_cards = await asyncio.to_thread(jobs.get, page=request.page)
+
+    return job_cards
