@@ -1,35 +1,16 @@
 from fastapi import APIRouter
+from src.getters.linkedin import get_jobs
 
-from src.scrapers.linkedin_scraper import LinkedinJobs
-
-from src.exceptions import MissingKeywords, InvalidCookiesOrUrl, MissingCookies
-from fastapi import HTTPException
-
-from src.models.job import Job
-from src.schemas.linkedin import JobRequest
-import asyncio
-
+from src.schemas.linkedin import JobRequest, JobResponse
 from typing import List
+
+import asyncio
 
 router = APIRouter()
 
 
 @router.get("/linkedin")
-async def search_job(request: JobRequest) -> List[Job]:
-    try:
-        jobs = LinkedinJobs(
-            keywords=request.keywords,
-            location=request.location,
-            timeframe=request.timeframe,
-            remote=request.remote,
-        )
-    except MissingKeywords:
-        raise HTTPException(status_code=400, detail="Keywords are required")
-    except InvalidCookiesOrUrl:
-        raise HTTPException(status_code=400, detail="Invalid cookies or url")
-    except MissingCookies:
-        raise HTTPException(status_code=400, detail="Please authenticate")
+async def search_job(request: List[JobRequest]) -> List[JobResponse]:
+    job_cards = [get_jobs(jobRequest) for jobRequest in request]
 
-    job_cards = await asyncio.to_thread(jobs.get, page=request.page)
-
-    return job_cards
+    return await asyncio.gather(*job_cards)
