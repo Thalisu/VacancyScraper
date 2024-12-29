@@ -54,7 +54,7 @@ class Browser:
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
-        if "neterror" not in element.get_attribute("class").split():
+        if "neterror" not in element.text:
             return True
 
         if not retries <= max_retries:
