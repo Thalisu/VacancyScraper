@@ -14,7 +14,4 @@ class JobRequest(BaseModel):
     page: int = Field(default=0)
 
 
-class JobResponse(BaseModel):
-    keywords: str
-    error: Optional[Error]
-    jobs: List[Optional[Job]]
+JobRequests = List[JobRequest]
