@@ -1,9 +1,6 @@
 from pydantic import BaseModel, Field
 
-from src.models.job import Job
-from src.models.error import Error
-
-from typing import List, Optional
+from typing import List
 
 
 class JobRequest(BaseModel):
