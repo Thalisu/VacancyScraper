@@ -23,3 +23,12 @@ class InvalidCookiesOrUrl(Exception):
         super().__init__()
         if message:
             self.message = message
+
+
+class CantEnsureRequest(Exception):
+    message = "Failed to ensure connection to url"
+
+    def __init__(self, message=None):
+        super().__init__()
+        if message:
+            self.message = message
