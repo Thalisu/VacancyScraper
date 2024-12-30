@@ -1,5 +1,4 @@
 from typing import TypedDict
-from pydantic import BaseModel
 
 
 class ErrorDetail(TypedDict):
@@ -7,5 +6,5 @@ class ErrorDetail(TypedDict):
     message: str
 
 
-class Error(BaseModel):
+class Error(TypedDict):
     error: ErrorDetail

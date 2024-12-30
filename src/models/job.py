@@ -1,8 +1,11 @@
-from pydantic import BaseModel
+from typing import TypedDict, List
 
 
-class Job(BaseModel):
+class Job(TypedDict):
     title: str
     url: str
     enterprise: str
     img: str
+
+
+Jobs = List[Job]
