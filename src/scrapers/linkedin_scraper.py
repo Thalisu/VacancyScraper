@@ -11,9 +11,18 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from selenium.common.exceptions import TimeoutException
-from src.exceptions import MissingKeywords, InvalidCookiesOrUrl, MissingCookies
+from src.exceptions import (
+    InvalidCookiesOrUrl,
+    MissingCookies,
+    CantEnsureRequest,
+)
+
+from src.schemas.linkedin import JobRequests
+
+from src.models.job import Jobs
 
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 
 import os
 
@@ -23,55 +32,72 @@ class LinkedinJobs:
     __base_url = "https://www.linkedin.com"
     __url: str
 
-    def __init__(
-        self,
-        keywords,
-        location,
-        timeframe,
-        remote,
-    ):
-        if not keywords:
-            raise MissingKeywords()
-        keywords = f"keywords={quote(keywords)}"
-        location = f"&location={location}"
-        timeframe = f"&f_TPR={timeframe}"
-        remote = f"&f_WT={remote}"
+    def __init__(self, jobRequests: JobRequests):
+        keywords = locations = timeframes = remotes = pages = []
+        self.keywords: list[str] = []
+        for jobRequest in jobRequests:
+            self.keywords.append(jobRequest.keywords)
+            keywords.append(f"keywords={quote(jobRequest.keywords)}")
+            locations.append(f"&location={jobRequest.location}")
+            timeframes.append(f"&f_TPR={jobRequest.timeframe}")
+            remotes.append(f"&f_WT={jobRequest.remote}")
+            pages.append(f"&start={jobRequest.page * 25}")
 
-        self.__url = (
-            f"{LINKEDIN_JOBS_URL}{keywords}{location}{timeframe}{remote}"
-        )
+        self.__urls = [
+            f"{LINKEDIN_JOBS_URL}?{keyword}{location}{timeframe}{remote}{page}"
+            for keyword, location, timeframe, remote, page in zip(
+                keywords, locations, timeframes, remotes, pages
+            )
+        ]
 
-        self.auth = Auth("linkedin")
         self.browser = Browser()
+        self.browser.create_driver(headless=False)
+        self.auth = Auth("linkedin", self.browser.driver)
 
-    def get(self, page):
+    async def get(self):
         # print("Verifying authentication...")
         if not self.__is_authenticated():
             # print("Trying headless Authentication...")
-            self.__authenticate()
+            await self.__authenticate()
         else:
             self.cookies = decrypt(self.__output_cookie_dir)
 
+        await self.browser.add_cookies_to_domain(self.__base_url, self.cookies)
+
         # print("Getting jobs...")
-        html = self.__get_jobs_html(page)
+        data = []
+        for url, keyword in zip(self.__urls, self.keywords):
+            base_data = {
+                "keywords": keyword,
+                "jobs": [],
+                "error": None,
+            }
 
-        # print("Setting up jobs...")
-        soup = BeautifulSoup(html[0], "html.parser")
+            html = await self.__get_jobs_html(url)
 
-        no_results = soup.select_one("div.jobs-search-no-results-banner")
+            soup = BeautifulSoup(html["page"], "html.parser")
 
-        if no_results:
-            return []
+            no_results = soup.select_one("div.jobs-search-no-results-banner")
 
-        soup = BeautifulSoup(html[1], "html.parser")
+            if no_results:
+                base_data["error"] = {
+                    "status_code": 404,
+                    "message": "no results",
+                }
+                data.append(base_data)
+            else:
+                base_data["jobs"] = self.__format_jobs(html["job_list"])
+                data.append(base_data)
 
-        job_cards = soup.select("li.scaffold-layout__list-item")
-        return self.__get_jobs(job_cards)
+        self.browser.close()
+        return data
 
-    def __get_jobs_html(self, page, retries=1):
-        driver = self.browser.create_driver(headless=False)
-        url = f"{self.__url}&start={page * 25}"
-        self.browser.get_with_cookies(self.__base_url, url, self.cookies)
+    async def __get_jobs_html(self, url, retries=1):
+        driver = self.browser.driver
+        try:
+            await self.browser.ensured_get(url)
+        except CantEnsureRequest:
+            return {"page": "", "job_list": ""}
 
         try:
             job_list = (
@@ -84,21 +110,21 @@ class LinkedinJobs:
                 .get_attribute("innerHTML")
             )
         except TimeoutException:
-            self.browser.close()
-
             if not retries:
+                self.browser.close()
                 raise InvalidCookiesOrUrl()
 
-            self.__authenticate()
-            return self.__get_jobs_html(page, retries=retries - 1)
+            await self.__authenticate()
+            return await self.__get_jobs_html(url, retries=retries - 1)
 
-        html = driver.page_source
-        self.browser.close()
-        return [html, job_list]
+        page = driver.page_source
+        return {"page": page, "job_list": job_list}
 
-    def __authenticate(self):
-        self.cookies = self.auth.authenticate(headless=True)
+    async def __authenticate(self):
+        self.cookies = await self.auth.authenticate()
+
         if not self.cookies:
+            self.browser.close()
             raise MissingCookies()
 
     def __is_authenticated(self):
@@ -114,41 +140,44 @@ class LinkedinJobs:
         self.cookies = cookies
         return True
 
-    def __get_jobs(self, job_cards):
-        jobs_dict = []
-        with open("random.html", "w") as f:
-            for job in job_cards:
-                f.write(str(job))
+    def __format_jobs(self, job_list_html) -> Jobs:
+        soup = BeautifulSoup(job_list_html, "html.parser")
 
-                a = job.find("a")
-                if not a:
-                    continue
-                title = a.find("strong").text
-                url = f"{self.__base_url}{a.get('href')}"
+        job_cards = soup.select("li.scaffold-layout__list-item")
 
-                enterprise_container = job.find(
-                    "div",
-                    attrs={"class": "artdeco-entity-lockup__subtitle"},
-                )
-                if enterprise_container:
-                    enterprise_container = enterprise_container.find("span")
-                enterprise = (
-                    enterprise_container.text.strip()
-                    if enterprise_container
-                    else ""
-                )
+        jobs_dict: Jobs = []
+        for job in job_cards:
+            a = job.find("a")
+            if not isinstance(a, Tag):
+                continue
+            strong = a.find("strong")
+            if not isinstance(strong, Tag):
+                continue
 
-                img = job.find("img")
-                if img:
-                    img = img.get("src")
+            title = strong.get_text(strip=True)
+            url = f"{self.__base_url}{a.attrs["href"]}"
 
-                jobs_dict.append(
-                    {
-                        "title": f"{title}",
-                        "url": f"{url}",
-                        "enterprise": f"{enterprise}",
-                        "img": f"{img}",
-                    }
-                )
+            div = job.find(
+                "div",
+                attrs={"class": "artdeco-entity-lockup__subtitle"},
+            )
+            if isinstance(div, Tag):
+                enterprise_container = div.find("span")
+
+            if enterprise_container and isinstance(enterprise_container, Tag):
+                enterprise = enterprise_container.get_text(strip=True)
+
+            img_tag = job.find("img")
+            if isinstance(img_tag, Tag):
+                img = img_tag.attrs["src"]
+
+            jobs_dict.append(
+                {
+                    "title": title,
+                    "url": url,
+                    "enterprise": enterprise if enterprise else "",
+                    "img": img if img else "",
+                }
+            )
 
         return jobs_dict
