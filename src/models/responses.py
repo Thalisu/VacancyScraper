@@ -1,11 +1,11 @@
 from typing import TypedDict, List, Optional
 from .job import Jobs
-from .error import Error
+from .error import ErrorDetail
 
 
 class LinkedInJobResponse(TypedDict):
     keywords: str
-    error: Optional[Error]
+    error: Optional[ErrorDetail]
     jobs: Jobs
 
 
