@@ -1,5 +1,6 @@
 from src.utils.constants import LINKEDIN_JOBS_URL
 from src.utils.cookie_encryption import decrypt
+from src.models import error, responses
 
 from urllib.parse import quote
 
@@ -28,12 +29,15 @@ import os
 
 
 class LinkedinJobs:
-    __output_cookie_dir = "linkedin_cookies.bin"
-    __base_url = "https://www.linkedin.com"
+    __cookies: list[dict[str, str]] | None
+    __output_cookie_dir: str = "linkedin_cookies.bin"
+    __base_url: str = "https://www.linkedin.com"
     __url: str
 
-    def __init__(self, jobRequests: JobRequests):
-        keywords = locations = timeframes = remotes = pages = []
+    def __init__(self, jobRequests: JobRequests) -> None:
+        keywords: list[str] = []
+        locations = timeframes = remotes = pages = keywords
+
         self.keywords: list[str] = []
         for jobRequest in jobRequests:
             self.keywords.append(jobRequest.keywords)
@@ -54,20 +58,23 @@ class LinkedinJobs:
         self.browser.create_driver(headless=False)
         self.auth = Auth("linkedin", self.browser.driver)
 
-    async def get(self):
+    async def get(self) -> responses.LinkedInJobResponses:
         # print("Verifying authentication...")
         if not self.__is_authenticated():
             # print("Trying headless Authentication...")
             await self.__authenticate()
-        else:
-            self.cookies = decrypt(self.__output_cookie_dir)
 
-        await self.browser.add_cookies_to_domain(self.__base_url, self.cookies)
+        if not self.__cookies:
+            raise MissingCookies()
+
+        await self.browser.add_cookies_to_domain(
+            self.__base_url, self.__cookies
+        )
 
         # print("Getting jobs...")
-        data = []
+        data: responses.LinkedInJobResponses = []
         for url, keyword in zip(self.__urls, self.keywords):
-            base_data = {
+            base_data: responses.LinkedInJobResponse = {
                 "keywords": keyword,
                 "jobs": [],
                 "error": None,
@@ -80,10 +87,11 @@ class LinkedinJobs:
             no_results = soup.select_one("div.jobs-search-no-results-banner")
 
             if no_results:
-                base_data["error"] = {
+                error_dict: error.ErrorDetail = {
                     "status_code": 404,
                     "message": "no results",
                 }
+                base_data["error"] = error_dict
                 data.append(base_data)
             else:
                 base_data["jobs"] = self.__format_jobs(html["job_list"])
@@ -92,8 +100,11 @@ class LinkedinJobs:
         self.browser.close()
         return data
 
-    async def __get_jobs_html(self, url, retries=1):
-        driver = self.browser.driver
+    async def __get_jobs_html(
+        self, url: str, retries: int = 1
+    ) -> dict[str, str]:
+        driver = self.browser.get_driver()
+
         try:
             await self.browser.ensured_get(url)
         except CantEnsureRequest:
@@ -107,7 +118,7 @@ class LinkedinJobs:
                         (By.CLASS_NAME, "scaffold-layout__list")
                     )
                 )
-                .get_attribute("innerHTML")
+                .get_attribute("innerHTML")  # type: ignore
             )
         except TimeoutException:
             if not retries:
@@ -118,16 +129,16 @@ class LinkedinJobs:
             return await self.__get_jobs_html(url, retries=retries - 1)
 
         page = driver.page_source
-        return {"page": page, "job_list": job_list}
+        return {"page": page, "job_list": job_list or ""}
 
-    async def __authenticate(self):
-        self.cookies = await self.auth.authenticate()
+    async def __authenticate(self) -> None:
+        self.__cookies = await self.auth.authenticate()
 
-        if not self.cookies:
+        if not self.__cookies:
             self.browser.close()
             raise MissingCookies()
 
-    def __is_authenticated(self):
+    def __is_authenticated(self) -> bool:
         cookie_path = self.__output_cookie_dir
 
         if not os.path.exists(cookie_path):
@@ -137,10 +148,10 @@ class LinkedinJobs:
         if not cookies:
             return False
 
-        self.cookies = cookies
+        self.__cookies = cookies
         return True
 
-    def __format_jobs(self, job_list_html) -> Jobs:
+    def __format_jobs(self, job_list_html: str) -> Jobs:
         soup = BeautifulSoup(job_list_html, "html.parser")
 
         job_cards = soup.select("li.scaffold-layout__list-item")
@@ -161,12 +172,16 @@ class LinkedinJobs:
                 "div",
                 attrs={"class": "artdeco-entity-lockup__subtitle"},
             )
+
+            enterprise_container = None
+            enterprise = None
             if isinstance(div, Tag):
                 enterprise_container = div.find("span")
 
             if enterprise_container and isinstance(enterprise_container, Tag):
                 enterprise = enterprise_container.get_text(strip=True)
 
+            img = None
             img_tag = job.find("img")
             if isinstance(img_tag, Tag):
                 img = img_tag.attrs["src"]

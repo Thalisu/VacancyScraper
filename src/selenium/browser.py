@@ -1,3 +1,4 @@
+from typing import Any
 from seleniumbase import Driver  # type: ignore
 from selenium.webdriver.chrome.webdriver import WebDriver
 
@@ -25,8 +26,14 @@ class Browser:
         self.driver = driver
         return driver
 
+    def get_driver(self) -> WebDriver:
+        if not self.driver:
+            self.driver = self.create_driver(headless=True)
+
+        return self.driver
+
     async def add_cookies_to_domain(
-        self, base_url: str, cookies: list[dict[str, str]], retries: int = 2
+        self, base_url: str, cookies: list[dict[str, Any]], retries: int = 2
     ) -> None:
         if retries == 0:
             raise InvalidCookiesOrUrl(message="cookies cant be applied")

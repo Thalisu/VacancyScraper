@@ -28,7 +28,7 @@ def encrypt(data: Any, out_dir: str) -> None:
         f.write(ciphered_data)
 
 
-def decrypt(file_dir: str) -> Any:
+def decrypt(file_dir: str) -> Any | list[Any]:
     with open(file_dir, "rb") as f:
         iv = f.read(16)
         ciphered_data = f.read()

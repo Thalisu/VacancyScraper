@@ -1,4 +1,4 @@
-from seleniumbase import Driver  # type: ignore
+from selenium.webdriver.chrome.webdriver import WebDriver
 
 from selenium.webdriver.common.keys import Keys
 from src.utils.config import get_config
@@ -15,7 +15,7 @@ import asyncio
 
 
 class Auth:
-    def __init__(self, where: str, driver: Driver = None):
+    def __init__(self, where: str, driver: WebDriver | None = None) -> None:
         if where == "linkedin":
             self.__output_cookie_dir = "linkedin_cookies.bin"
 
@@ -25,16 +25,22 @@ class Auth:
 
         self.driver = driver
 
-    async def authenticate(self, headless=False):
+    async def authenticate(
+        self, headless: bool = False
+    ) -> None | list[dict[str, str]]:
         if not self.driver:
             self.driver = self.browser.create_driver(headless=headless)
 
         self.driver.get(LINKEDIN_SIGNIN_URL)
-        self.driver.find_element(By.ID, "username").send_keys(
-            get_config("USER")
-        )
+        USER = get_config("USER")
+        PASSWORD = get_config("PASSWORD")
+
+        if not USER or not PASSWORD:
+            return None
+
+        self.driver.find_element(By.ID, "username").send_keys(USER)
         self.driver.find_element(By.ID, "password").send_keys(
-            get_config("PASSWORD") + Keys.ENTER
+            PASSWORD + Keys.ENTER
         )
 
         await asyncio.sleep(1)
@@ -58,10 +64,11 @@ class Auth:
                 in d.find_element(By.TAG_NAME, "h1").text.lower()
             )
 
-        cookies = self.driver.get_cookies()
+        cookies = self.driver.get_cookies()  # type: ignore
 
         if self.browser:
             self.browser.close()
 
         encrypt(cookies, self.__output_cookie_dir)
-        return cookies
+
+        return cookies  # type: ignore
