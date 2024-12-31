@@ -8,3 +8,4 @@ testdata.txt
 random.html
 *.bin
 downloaded_files
+src/redis/redis_data/*
