@@ -32,7 +32,8 @@ async def test_enqueue() -> dict[str, int]:
 
 
 @router.get("/get/{task_id}")
-async def get_task(task_id: TaskId) -> Task:
+async def get_task(task_id: str) -> Task:
+    
     task = get_job(task_id)
 
     if not task:
