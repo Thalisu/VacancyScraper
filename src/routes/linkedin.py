@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+import asyncio
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from src.models.error import ErrorDetail
 from src.models.responses import LinkedInJobResponse
-from src.models.task import Task
 from src.scrapers.linkedin_scraper import LinkedinJobs
 from src.redis.queue import enqueue, get_job, get_queue_size
 from src.schemas.linkedin import JobRequests
@@ -13,7 +14,9 @@ async def get_linkedin_jobs(request: JobRequests) -> LinkedInJobResponse:
         response = await LinkedinJobs(jobRequests=request).get()
         data = LinkedInJobResponse(response=response, error=None)
     except Exception as e:
-        data = LinkedInJobResponse(response=None, error=e.args[0])
+        data = LinkedInJobResponse(
+            response=None, error=ErrorDetail(status_code=500, message=str(e))
+        )
 
     return data
 
@@ -30,23 +33,43 @@ async def test_enqueue() -> dict[str, int]:
     return {"queue_size": get_queue_size()}
 
 
-@router.get("/get/{task_id}")
-async def get_task(task_id: str) -> Task:
+@router.websocket("/ws/{task_id}")
+async def get_task(websocket: WebSocket, task_id: str) -> None:
+    await websocket.accept()
+    try:
+        while True:
+            task = get_job(task_id)
+            if not task:
+                await websocket.send_json(
+                    {"status": "error", "detail": "Task not found"}
+                )
+                await websocket.close()
+                return None
 
-    task = get_job(task_id)
+            if task["task_status"] == "failed":
+                await websocket.send_json(task)
+                await websocket.close()
+                return None
 
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+            if task["task_result"]:
+                break
 
-    if task["task_status"] == "failed":
-        raise HTTPException(status_code=500, detail="Task failed")
+            await websocket.send_json(task)
 
-    if not task["task_result"]:
-        return task
+            await asyncio.sleep(0.2 if task["task_status"] == "started" else 1)
 
-    if task["task_result"]["error"]:
-        raise HTTPException(
-            status_code=400, detail=task["task_result"]["error"]
+        await websocket.send_json(task)
+        await websocket.close()
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        await websocket.send_json(
+            {
+                "task_result": LinkedInJobResponse(
+                    response=None,
+                    error=ErrorDetail(status_code=500, message=str(e)),
+                ),
+                "task_status": "failed",
+            }
         )
-
-    return task
+        await websocket.close()
