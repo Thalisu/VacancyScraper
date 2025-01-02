@@ -58,7 +58,7 @@ class LinkedinJobs:
         self.browser.create_driver(headless=False)
         self.auth = Auth("linkedin", self.browser.driver)
 
-    async def get(self) -> responses.LinkedInJobResponses:
+    async def get(self) -> list[responses.Data]:
         # print("Verifying authentication...")
         if not self.__is_authenticated():
             # print("Trying headless Authentication...")
@@ -72,9 +72,9 @@ class LinkedinJobs:
         )
 
         # print("Getting jobs...")
-        data: responses.LinkedInJobResponses = []
+        data: list[responses.Data] = []
         for url, keyword in zip(self.__urls, self.keywords):
-            base_data: responses.LinkedInJobResponse = {
+            base_data: responses.Data = {
                 "keywords": keyword,
                 "jobs": [],
                 "error": None,
