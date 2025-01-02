@@ -19,7 +19,7 @@ async def get_linkedin_jobs(request: JobRequests) -> LinkedInJobResponse:
     return data
 
 
-@router.get("/")
+@router.post("/")
 async def search_job(request: JobRequests) -> dict[str, str]:
     task_id = enqueue(get_linkedin_jobs, request)
 
@@ -31,9 +31,9 @@ async def test_enqueue() -> dict[str, int]:
     return {"queue_size": get_queue_size()}
 
 
-@router.get("/get")
-async def get_task(request: TaskId) -> Task:
-    task = get_job(request.task_id)
+@router.get("/get/{task_id}")
+async def get_task(task_id: TaskId) -> Task:
+    task = get_job(task_id)
 
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
