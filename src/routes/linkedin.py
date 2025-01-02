@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from src.models.responses import LinkedInJobResponse
 from src.models.task import Task
-from src.schemas.task_id import TaskId
 from src.scrapers.linkedin_scraper import LinkedinJobs
 from src.redis.queue import enqueue, get_job, get_queue_size
 from src.schemas.linkedin import JobRequests
@@ -33,7 +32,7 @@ async def test_enqueue() -> dict[str, int]:
 
 @router.get("/get/{task_id}")
 async def get_task(task_id: str) -> Task:
-    
+
     task = get_job(task_id)
 
     if not task:
