@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from src.models.responses import LinkedInJobResponses
 from src.models.task import Task
 from src.schemas.task_id import TaskId
 from src.scrapers.linkedin_scraper import LinkedinJobs
@@ -8,7 +9,7 @@ from src.schemas.linkedin import JobRequests
 router = APIRouter(prefix="/linkedin")
 
 
-async def get_linkedin_jobs(request: JobRequests):
+async def get_linkedin_jobs(request: JobRequests) -> LinkedInJobResponses:
     return await LinkedinJobs(jobRequests=request).get()
 
 
