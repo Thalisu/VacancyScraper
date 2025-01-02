@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field, conlist
+from typing import Annotated
+from pydantic import BaseModel, Field
 
 
 class JobRequest(BaseModel):
@@ -9,4 +10,4 @@ class JobRequest(BaseModel):
     page: int = Field(default=0)
 
 
-JobRequests = conlist(JobRequest, min_length=1, max_length=20)
+JobRequests = Annotated[list[JobRequest], Field(min_length=1, max_length=20)]
