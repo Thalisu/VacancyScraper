@@ -1,12 +1,8 @@
-from typing import TypedDict, List, Optional
-from .job import Jobs
+from typing import TypedDict, Optional
+from .job import Data
 from .error import ErrorDetail
 
 
 class LinkedInJobResponse(TypedDict):
-    keywords: str
+    response: Data
     error: Optional[ErrorDetail]
-    jobs: Jobs
-
-
-LinkedInJobResponses = List[LinkedInJobResponse]
