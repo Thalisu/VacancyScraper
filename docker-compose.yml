@@ -12,6 +12,21 @@ services:
     environment:
       ENV_MODE: "prod"
       REDIS_PORT: "6379"
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+    depends_on:
+      - redis
+
+  worker1:
+    image: vacancy-backend
+    build:
+      context: "."
+    container_name: worker1
+    command: ["python3", "-m", "src.redis.worker"]
+    environment:
+      REDIS_PORT: "6379"
+    depends_on:
+      - redis
+
   redis:
     image: redis
     ports:
