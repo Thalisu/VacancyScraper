@@ -1,10 +1,10 @@
 from rq import Queue
-from redis import Redis
 
 from src.models.task import Task
 from typing import Any
 
-redis_conn = Redis(host="localhost", port=6379)
+from .connection import redis_conn
+
 queue = Queue(connection=redis_conn)
 
 
