@@ -32,27 +32,21 @@ class LinkedinJobs:
     __cookies: list[dict[str, str]] | None
     __output_cookie_dir: str = "linkedin_cookies.bin"
     __base_url: str = "https://www.linkedin.com"
-    __url: str
+    __urls: list[str] = []
+    keywords: list[str] = []
 
     def __init__(self, jobRequests: JobRequests) -> None:
-        keywords: list[str] = []
-        locations = timeframes = remotes = pages = keywords
-
-        self.keywords: list[str] = []
         for jobRequest in jobRequests:
             self.keywords.append(jobRequest.keywords)
-            keywords.append(f"keywords={quote(jobRequest.keywords)}")
-            locations.append(f"&location={jobRequest.location}")
-            timeframes.append(f"&f_TPR={jobRequest.timeframe}")
-            remotes.append(f"&f_WT={jobRequest.remote}")
-            pages.append(f"&start={jobRequest.page * 25}")
+            keyword = f"keywords={quote(jobRequest.keywords)}"
+            location = f"&location={jobRequest.location}"
+            timeframe = f"&f_TPR={jobRequest.timeframe}"
+            remote = f"&f_WT={jobRequest.remote}"
+            page = f"&start={jobRequest.page * 25}"
 
-        self.__urls = [
-            f"{LINKEDIN_JOBS_URL}{keyword}{location}{timeframe}{remote}{page}"
-            for keyword, location, timeframe, remote, page in zip(
-                keywords, locations, timeframes, remotes, pages
+            self.__urls.append(
+                f"{LINKEDIN_JOBS_URL}{keyword}{location}{timeframe}{remote}{page}"
             )
-        ]
 
         self.browser = Browser()
         self.browser.create_driver(headless=False)
