@@ -183,7 +183,9 @@ class LinkedinJobs:
             time_container = job.find("time")
             state = None
             if isinstance(time_container, Tag):
-                state = time_container.get_text(strip=True)
+                state = time_container.get_text(strip=True).replace(
+                    "Nas últimas 24 horas", ""
+                )
 
             if not state:
                 state_container = job.find(
