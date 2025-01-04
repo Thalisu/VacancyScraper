@@ -74,7 +74,6 @@ class LinkedinJobs:
         # print("Getting jobs...")
         data: list[responses.Data] = []
         for url, keyword in zip(self.__urls, self.keywords):
-            print(url)
             base_data: responses.Data = {
                 "keywords": keyword,
                 "jobs": [],
@@ -98,7 +97,7 @@ class LinkedinJobs:
                 base_data["jobs"] = self.__format_jobs(html["job_list"])
                 data.append(base_data)
 
-        # self.browser.close()
+        self.browser.close()
         return data
 
     async def __get_jobs_html(
@@ -187,12 +186,35 @@ class LinkedinJobs:
             if isinstance(img_tag, Tag):
                 img = img_tag.attrs["src"]
 
+            time_container = job.find("time")
+            state = None
+            if isinstance(time_container, Tag):
+                state = time_container.get_text(strip=True)
+
+            if not state:
+                state_container = job.find(
+                    "li",
+                    attrs={"class": "job-card-container__footer-job-state"},
+                )
+                if isinstance(state_container, Tag):
+                    state = state_container.get_text(strip=True)
+
+            location = None
+            location_container = job.find(
+                "ul",
+                attrs={"class": "job-card-container__metadata-wrapper"},
+            )
+            if isinstance(location_container, Tag):
+                location = location_container.get_text(strip=True)
+
             jobs_dict.append(
                 {
                     "title": title,
                     "url": url,
                     "enterprise": enterprise if enterprise else "",
                     "img": img if img else "",
+                    "state": state if state else "",
+                    "location": location if location else "",
                 }
             )
 

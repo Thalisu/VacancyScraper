@@ -7,6 +7,8 @@ class Job(TypedDict):
     url: str
     enterprise: str
     img: str
+    state: str
+    location: str
 
 
 Jobs = List[Job]
