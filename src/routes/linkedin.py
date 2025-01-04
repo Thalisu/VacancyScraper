@@ -29,7 +29,7 @@ async def search_job(request: JobRequests) -> dict[str, str]:
 
 
 @router.get("/queue")
-async def test_enqueue() -> dict[str, int]:
+async def queue() -> dict[str, int]:
     return {"queue_size": get_queue_size()}
 
 
