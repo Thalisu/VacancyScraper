@@ -6,12 +6,6 @@ WORKDIR /app
 RUN pip install --upgrade pip
 RUN apt-get update && apt-get install -y wget unzip curl jq
 
-# Install Chrome
-ARG ChromeUrl=https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-RUN wget $ChromeUrl && \
-    apt install -y ./google-chrome-stable_current_amd64.deb && \
-    rm google-chrome-stable_current_amd64.deb
-
 # Cleanup
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 

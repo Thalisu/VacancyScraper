@@ -3,6 +3,8 @@ services:
     image: vacancy-backend
     build:
       context: "."
+      dockerfile: ./Dockerfile
+    container_name: backend
     restart: always
     expose:
       - 8000
@@ -19,9 +21,10 @@ services:
       - redis
 
   worker1:
-    image: vacancy-backend
+    image: vacancy-backend-worker
     build:
       context: "."
+      dockerfile: ./worker.Dockerfile
     restart: always
     container_name: worker1
     command: ["python3", "-m", "src.redis.worker"]
