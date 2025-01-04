@@ -48,7 +48,7 @@ class LinkedinJobs:
             pages.append(f"&start={jobRequest.page * 25}")
 
         self.__urls = [
-            f"{LINKEDIN_JOBS_URL}?{keyword}{location}{timeframe}{remote}{page}"
+            f"{LINKEDIN_JOBS_URL}{keyword}{location}{timeframe}{remote}{page}"
             for keyword, location, timeframe, remote, page in zip(
                 keywords, locations, timeframes, remotes, pages
             )
@@ -74,6 +74,7 @@ class LinkedinJobs:
         # print("Getting jobs...")
         data: list[responses.Data] = []
         for url, keyword in zip(self.__urls, self.keywords):
+            print(url)
             base_data: responses.Data = {
                 "keywords": keyword,
                 "jobs": [],
@@ -97,7 +98,7 @@ class LinkedinJobs:
                 base_data["jobs"] = self.__format_jobs(html["job_list"])
                 data.append(base_data)
 
-        self.browser.close()
+        # self.browser.close()
         return data
 
     async def __get_jobs_html(
