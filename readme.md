@@ -12,6 +12,9 @@
     PASSWORD = random_password
     AES_KEY = 0000000000000000000000000000000000000000000000000000000000000000
 
+### Authenticate
+    python3 -m src.authenticate "linkedin"
+
 ## Install docker
 
     https://www.docker.com/
