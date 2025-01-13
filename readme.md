@@ -1,5 +1,8 @@
 # Running guide
 
+    python -m venv venv
+    pip install -r ./requirements.txt
+
 ## Define your .env
 
 ### Generate your AES key
@@ -13,6 +16,7 @@
     AES_KEY = 0000000000000000000000000000000000000000000000000000000000000000
 
 ### Authenticate
+
     python3 -m src.authenticate "linkedin"
 
 ## Install docker
