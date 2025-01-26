@@ -39,7 +39,7 @@ class LinkedinJobs:
         for jobRequest in jobRequests:
             self.keywords.append(jobRequest.keywords)
             keyword = f"keywords={quote(jobRequest.keywords)}"
-            location = f"&location={jobRequest.location}"
+            location = f"&geoId={jobRequest.location}"
             timeframe = f"&f_TPR={jobRequest.timeframe}"
             remote = f"&f_WT={jobRequest.remote}"
             page = f"&start={jobRequest.page * 25}"
