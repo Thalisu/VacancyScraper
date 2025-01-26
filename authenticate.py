@@ -1,3 +1,4 @@
+import asyncio
 from src.authenticate import Auth
 import sys
 
@@ -7,5 +8,5 @@ except IndexError:
     print("Please specify where to authenticate")
     sys.exit(0)
 
-auth = Auth(where)
-auth.authenticate()
+if __name__ == "__main__":
+    asyncio.run(Auth(where).authenticate())
